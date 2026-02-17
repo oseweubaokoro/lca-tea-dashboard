@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LCA + TEA Interactive Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+ margin:0;
+ font-family: 'Segoe UI', sans-serif;
+ background: linear-gradient(135deg,#1e3c72,#2a5298);
+ color:white;
+}
+header{
+ padding:20px;
+ text-align:center;
+ font-size:24px;
+ font-weight:bold;
+ background:rgba(0,0,0,0.25);
+}
+nav{
+ display:flex;
+ justify-content:center;
+ gap:20px;
+ padding:15px;
+}
+nav button{
+ background:white;
+ color:#1e3c72;
+ border:none;
+ padding:10px 20px;
+ border-radius:25px;
+ cursor:pointer;
+ transition:0.3s;
+}
+nav button:hover{ transform:scale(1.1); }
+
+.page{ display:none; padding:20px; }
+.page.active{ display:block; }
+
+.card{
+ background:rgba(255,255,255,0.1);
+ backdrop-filter: blur(10px);
+ border-radius:15px;
+ padding:20px;
+ margin:15px 0;
+ transition:0.3s;
+}
+.card:hover{ transform:translateY(-5px); }
+
+input{
+ width:100%;
+ padding:8px;
+ border-radius:8px;
+ border:none;
+ margin:5px 0;
+}
+
+.kpi{
+ font-size:26px;
+ font-weight:bold;
+ margin-top:10px;
+}
+
+canvas{
+ background:white;
+ border-radius:12px;
+ padding:10px;
+ margin-top:15px;
+}
+
+</style>
+</head>
+<body>
+
+<header>🌍 Integrated LCA + TEA Dashboard</header>
+
+<nav>
+<button onclick="showPage('lca')">LCA</button>
+<button onclick="showPage('tea')">TEA</button>
+<button onclick="showPage('summary')">Summary</button>
+</nav>
+
+<!-- LCA -->
+<div id="lca" class="page active">
+<div class="card">
+<h3>LCA Inputs</h3>
+Biomass (t/FU)<input id="biomass" value="3">
+Transport km<input id="km" value="120">
+Truck EF<input id="truckEF" value="0.12">
+Electricity (kWh/FU)<input id="elec" value="900">
+Grid EF<input id="gridEF" value="0.35">
+<button onclick="runLCA()">Run LCA</button>
+<div id="lcaKPI" class="kpi"></div>
+</div>
+<canvas id="lcaChart"></canvas>
+</div>
+
+<!-- TEA -->
+<div id="tea" class="page">
+<div class="card">
+<h3>TEA Inputs</h3>
+Life (years)<input id="life" value="15">
+Discount %<input id="discount" value="8">
+CAPEX<input id="capex" value="5000000">
+Revenue<input id="revenue" value="2000000">
+OPEX<input id="opex" value="1200000">
+<button onclick="runTEA()">Run TEA</button>
+<div id="teaKPI" class="kpi"></div>
+</div>
+<canvas id="teaChart"></canvas>
+</div>
+
+<!-- SUMMARY -->
+<div id="summary" class="page">
+<div class="card">
+<h3>Integrated Results</h3>
+<div id="summaryResults" class="kpi"></div>
+</div>
+</div>
+
+<script>
+
+let appState = {}
+let lcaChart = null
+let teaChart = null
+
+function showPage(id){
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+ document.getElementById(id).classList.add('active')
+ updateSummary()
+}
+
+// ---------------- LCA ----------------
+function runLCA(){
+
+ let biomass = parseFloat(document.getElementById("biomass").value)
+ let km = parseFloat(document.getElementById("km").value)
+ let truckEF = parseFloat(document.getElementById("truckEF").value)
+ let elec = parseFloat(document.getElementById("elec").value)
+ let gridEF = parseFloat(document.getElementById("gridEF").value)
+
+ let transport = biomass * km * truckEF
+ let electricity = elec * gridEF
+ let total = transport + electricity
+
+ appState.ghg = total
+
+ document.getElementById("lcaKPI").innerHTML =
+ "GHG: " + total.toFixed(1) + " kg CO₂e/FU"
+
+ if(lcaChart) lcaChart.destroy()
+
+ lcaChart = new Chart(
+   document.getElementById("lcaChart").getContext("2d"),
+   {
+     type:'doughnut',
+     data:{
+       labels:['Transport','Electricity'],
+       datasets:[{
+         data:[transport, electricity],
+         backgroundColor:['#ff6b6b','#4ecdc4']
+       }]
+     }
+   }
+ )
+}
+
+// ---------------- TEA ----------------
+function runTEA(){
+
+ let life = parseInt(document.getElementById("life").value)
+ let r = parseFloat(document.getElementById("discount").value)/100
+ let capex = parseFloat(document.getElementById("capex").value)
+ let revenue = parseFloat(document.getElementById("revenue").value)
+ let opex = parseFloat(document.getElementById("opex").value)
+
+ let margin = revenue - opex
+ let npv = -capex
+
+ let cash = [-capex]
+
+ for(let y=1;y<=life;y++){
+   npv += margin / Math.pow(1+r,y)
+   cash.push(margin)
+ }
+
+ appState.npv = npv
+
+ document.getElementById("teaKPI").innerHTML =
+ "NPV: $" + npv.toFixed(0)
+
+ if(teaChart) teaChart.destroy()
+
+ teaChart = new Chart(
+   document.getElementById("teaChart").getContext("2d"),
+   {
+     type:'line',
+     data:{
+       labels: cash.map((_,i)=>i),
+       datasets:[{
+         label:'Annual Cashflow',
+         data: cash,
+         borderColor:'#ffd93d',
+         backgroundColor:'rgba(255,217,61,0.2)',
+         tension:0.3
+       }]
+     }
+   }
+ )
+}
+
+// ---------------- SUMMARY ----------------
+function updateSummary(){
+ if(appState.ghg && appState.npv){
+   document.getElementById("summaryResults").innerHTML =
+   "GHG: " + appState.ghg.toFixed(1) +
+   " kg CO₂e/FU | NPV: $" + appState.npv.toFixed(0)
+ } else {
+   document.getElementById("summaryResults").innerHTML =
+   "Run LCA and TEA first."
+ }
+}
+
+</script>
+</body>
+</html>
