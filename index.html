@@ -2,227 +2,837 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LCA + TEA Interactive Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+:root{
+  --bg1:#1e3c72;
+  --bg2:#2a5298;
+  --glass: rgba(255,255,255,0.10);
+  --glass2: rgba(255,255,255,0.16);
+  --text: rgba(255,255,255,0.95);
+  --muted: rgba(255,255,255,0.78);
+  --shadow: 0 12px 35px rgba(0,0,0,0.25);
+}
+
+*{ box-sizing:border-box; }
 body{
- margin:0;
- font-family: 'Segoe UI', sans-serif;
- background: linear-gradient(135deg,#1e3c72,#2a5298);
- color:white;
+  margin:0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(1200px 800px at 20% 20%, rgba(255,255,255,0.10), transparent 55%),
+    radial-gradient(1200px 800px at 80% 70%, rgba(255,255,255,0.10), transparent 55%),
+    linear-gradient(135deg,var(--bg1),var(--bg2));
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
 }
+
 header{
- padding:20px;
- text-align:center;
- font-size:24px;
- font-weight:bold;
- background:rgba(0,0,0,0.25);
+  padding:18px 18px 10px;
+  text-align:center;
+  font-size:24px;
+  font-weight:800;
+  letter-spacing:0.3px;
+  background:rgba(0,0,0,0.20);
+  border-bottom:1px solid rgba(255,255,255,0.10);
+  position:sticky;
+  top:0;
+  z-index:10;
+  backdrop-filter: blur(10px);
 }
+
 nav{
- display:flex;
- justify-content:center;
- gap:20px;
- padding:15px;
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  padding:14px 14px 6px;
+  flex-wrap:wrap;
 }
+
 nav button{
- background:white;
- color:#1e3c72;
- border:none;
- padding:10px 20px;
- border-radius:25px;
- cursor:pointer;
- transition:0.3s;
+  background: rgba(255,255,255,0.92);
+  color:#1e3c72;
+  border:none;
+  padding:10px 18px;
+  border-radius:999px;
+  cursor:pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+  font-weight:700;
 }
-nav button:hover{ transform:scale(1.1); }
+nav button:hover{ transform: translateY(-1px) scale(1.03); }
+nav button:active{ transform: translateY(1px) scale(0.98); opacity:0.9; }
+nav button.active{
+  background: rgba(255,255,255,1);
+  box-shadow: 0 14px 25px rgba(0,0,0,0.28);
+}
 
-.page{ display:none; padding:20px; }
+.container{
+  max-width:1100px;
+  margin: 0 auto;
+  padding: 10px 16px 28px;
+}
+
+/* Page transitions */
+.page{
+  display:none;
+  opacity:0;
+  transform: translateY(10px);
+  transition: opacity 220ms ease, transform 220ms ease;
+  will-change: opacity, transform;
+}
 .page.active{ display:block; }
-
-.card{
- background:rgba(255,255,255,0.1);
- backdrop-filter: blur(10px);
- border-radius:15px;
- padding:20px;
- margin:15px 0;
- transition:0.3s;
+.page.visible{
+  opacity:1;
+  transform: translateY(0);
 }
-.card:hover{ transform:translateY(-5px); }
+
+/* Cards + entrance animations */
+.card{
+  background:var(--glass);
+  backdrop-filter: blur(12px);
+  border-radius:18px;
+  padding:18px;
+  margin:14px 0;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255,255,255,0.12);
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+  animation: cardIn 340ms ease both;
+}
+.card:hover{
+  transform: translateY(-3px);
+  background: var(--glass2);
+  border-color: rgba(255,255,255,0.18);
+}
+@keyframes cardIn{
+  from{ opacity:0; transform: translateY(10px); }
+  to{ opacity:1; transform: translateY(0); }
+}
+
+h3{ margin: 0 0 12px; }
+.small{ font-size:12px; color:var(--muted); line-height:1.35; }
+.kpi{
+  font-size:22px;
+  font-weight:900;
+  margin-top:10px;
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.kpi .pill{
+  font-size:12px;
+  font-weight:800;
+  padding:6px 10px;
+  border-radius:999px;
+  background: rgba(0,0,0,0.22);
+  border:1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.9);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap:12px;
+}
+
+label{
+  font-size:13px;
+  color: rgba(255,255,255,0.92);
+  display:block;
+  margin-bottom:6px;
+  font-weight:700;
+}
+
+.field{
+  background: rgba(0,0,0,0.16);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:14px;
+  padding:12px;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+.field:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,0.20);
+  background: rgba(0,0,0,0.18);
+}
 
 input{
- width:100%;
- padding:8px;
- border-radius:8px;
- border:none;
- margin:5px 0;
+  width:100%;
+  padding:10px 10px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.10);
+  color:var(--text);
+  outline:none;
+  font-weight:700;
+}
+input:focus{
+  border-color: rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.14);
 }
 
-.kpi{
- font-size:26px;
- font-weight:bold;
- margin-top:10px;
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.actions button{
+  background: rgba(255,255,255,0.95);
+  color:#1e3c72;
+  border:none;
+  padding:10px 16px;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:900;
+  transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.20);
+}
+.actions button:hover{ transform: translateY(-1px); box-shadow: 0 14px 25px rgba(0,0,0,0.26); }
+.actions button:active{ transform: translateY(1px); opacity:0.9; }
+
+hr.sep{
+  border:none;
+  height:1px;
+  background:rgba(255,255,255,0.18);
+  margin:18px 0;
 }
 
 canvas{
- background:white;
- border-radius:12px;
- padding:10px;
- margin-top:15px;
+  background:white;
+  border-radius:16px;
+  padding:10px;
+  margin-top:10px;
 }
 
+.toast{
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(0,0,0,0.70);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.95);
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events:none;
+  transition: opacity 220ms ease, transform 220ms ease;
+  backdrop-filter: blur(10px);
+  z-index:999;
+}
+.toast.show{
+  opacity:1;
+  transform: translateX(-50%) translateY(0);
+}
+
+details{
+  background: rgba(0,0,0,0.14);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:14px;
+  padding:12px;
+}
+details summary{
+  cursor:pointer;
+  font-weight:900;
+}
+details .small{ margin-top:8px; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ transition:none !important; animation:none !important; scroll-behavior:auto !important; }
+}
 </style>
 </head>
-<body>
 
+<body>
 <header>🌍 Integrated LCA + TEA Dashboard</header>
 
 <nav>
-<button onclick="showPage('lca')">LCA</button>
-<button onclick="showPage('tea')">TEA</button>
-<button onclick="showPage('summary')">Summary</button>
+  <button id="tab-lca" onclick="showPage('lca')">LCA</button>
+  <button id="tab-tea" onclick="showPage('tea')">TEA</button>
+  <button id="tab-summary" onclick="showPage('summary')">Summary</button>
 </nav>
 
-<!-- LCA -->
-<div id="lca" class="page active">
-<div class="card">
-<h3>LCA Inputs</h3>
-Biomass (t/FU)<input id="biomass" value="3">
-Transport km<input id="km" value="120">
-Truck EF<input id="truckEF" value="0.12">
-Electricity (kWh/FU)<input id="elec" value="900">
-Grid EF<input id="gridEF" value="0.35">
-<button onclick="runLCA()">Run LCA</button>
-<div id="lcaKPI" class="kpi"></div>
-</div>
-<canvas id="lcaChart"></canvas>
+<div class="container">
+
+  <!-- LCA -->
+  <div id="lca" class="page active">
+    <div class="card">
+      <h3>LCA System Inventory (per FU)</h3>
+
+      <div class="grid">
+        <div class="field">
+          <label>Feedstock in (t/FU)</label>
+          <input id="feedIn" value="3">
+          <div class="small">Mass of biomass/feedstock entering the process.</div>
+        </div>
+
+        <div class="field">
+          <label>Main product out (t/FU)</label>
+          <input id="prodOut" value="1">
+          <div class="small">Mass of main product leaving the gate.</div>
+        </div>
+
+        <div class="field">
+          <label>Co-product out (t/FU)</label>
+          <input id="coprodOut" value="0">
+          <div class="small">Optional secondary product; set to 0 if none.</div>
+        </div>
+
+        <div class="field">
+          <label>Solid waste out (t/FU)</label>
+          <input id="wSolid" value="0.2">
+          <div class="small">E.g., ash, char, sludge cake.</div>
+        </div>
+
+        <div class="field">
+          <label>Liquid waste out (t/FU)</label>
+          <input id="wLiquid" value="0.1">
+          <div class="small">TOTAL liquid waste mass (e.g., wastewater, purge).</div>
+        </div>
+
+        <div class="field">
+          <label>Gaseous waste out (t/FU)</label>
+          <input id="wGas" value="0.05">
+          <div class="small">TOTAL gas waste mass vented/treated (not product gas).</div>
+        </div>
+
+        <!-- Added for mass-balance realism -->
+        <div class="field">
+          <label>Added water / moisture in (t/FU)</label>
+          <input id="waterIn" value="0">
+          <div class="small">Make-up water, moisture, solvents counted as water-equivalent.</div>
+        </div>
+
+        <div class="field">
+          <label>Air in (t/FU) (optional)</label>
+          <input id="airIn" value="0">
+          <div class="small">Use if you want combustion/oxidation air tracked in mass balance.</div>
+        </div>
+
+        <div class="field">
+          <label>Evaporated water out (t/FU)</label>
+          <input id="waterVaporOut" value="0">
+          <div class="small">Water leaving as vapor (drying, vents, evaporation).</div>
+        </div>
+
+        <div class="field">
+          <label>CO₂ to air out (t/FU)</label>
+          <input id="co2Out" value="0">
+          <div class="small">For mass balance only. Does NOT automatically become fossil GHG.</div>
+        </div>
+      </div>
+
+      <hr class="sep">
+
+      <h3>Energy + Logistics (per FU)</h3>
+      <div class="grid">
+        <div class="field">
+          <label>Transport distance (km)</label>
+          <input id="km" value="120">
+        </div>
+
+        <div class="field">
+          <label>Truck EF (kg CO₂e / (t·km))</label>
+          <input id="truckEF" value="0.12">
+        </div>
+
+        <div class="field">
+          <label>Electricity in (kWh/FU)</label>
+          <input id="elecIn" value="900">
+        </div>
+
+        <div class="field">
+          <label>Grid EF (kg CO₂e/kWh)</label>
+          <input id="gridEF" value="0.35">
+        </div>
+
+        <div class="field">
+          <label>Heat/Steam in (MJ/FU)</label>
+          <input id="heatIn" value="0">
+          <div class="small">Set 0 if not used.</div>
+        </div>
+
+        <div class="field">
+          <label>Heat EF (kg CO₂e/MJ)</label>
+          <input id="heatEF" value="0.07">
+          <div class="small">Replace with your factor (fuel/steam source).</div>
+        </div>
+
+        <div class="field">
+          <label>Exported electricity (kWh/FU)</label>
+          <input id="elecOut" value="0">
+          <div class="small">Credit uses Grid EF.</div>
+        </div>
+
+        <div class="field">
+          <label>Exported heat (MJ/FU)</label>
+          <input id="heatOut" value="0">
+          <div class="small">Credit uses Heat EF.</div>
+        </div>
+      </div>
+
+      <hr class="sep">
+
+      <h3>Waste Treatment Emission Factors</h3>
+      <div class="grid">
+        <div class="field">
+          <label>Solid waste EF (kg CO₂e/t)</label>
+          <input id="efSolid" value="50">
+        </div>
+
+        <div class="field">
+          <label>Liquid waste EF (kg CO₂e/t)</label>
+          <input id="efLiquid" value="30">
+        </div>
+
+        <div class="field">
+          <label>Gas waste EF (kg CO₂e/t)</label>
+          <input id="efGas" value="200">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button onclick="runLCA()">Run LCA</button>
+        <button onclick="quickScenario('low')">Low-impact scenario</button>
+        <button onclick="quickScenario('high')">High-impact scenario</button>
+      </div>
+
+      <div id="lcaKPI" class="kpi"></div>
+      <div id="lcaMassCheck" class="small"></div>
+
+      <details style="margin-top:12px;">
+        <summary>How to interact</summary>
+        <div class="small">
+          • Click a doughnut slice to show its value. • Click legend items to toggle contributions.
+          • Edit any input: results update when you press Run, or hit Ctrl/⌘+Enter.
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h3>GHG Contribution</h3>
+      <canvas id="lcaChart"></canvas>
+      <div id="lcaSliceInfo" class="small"></div>
+    </div>
+
+    <div class="card">
+      <h3>Mass + Energy Flow Overview</h3>
+      <div class="small">Mixed units; this is a quick inventory visualization, not a Sankey solver.</div>
+      <canvas id="flowChart"></canvas>
+    </div>
+  </div>
+
+  <!-- TEA -->
+  <div id="tea" class="page">
+    <div class="card">
+      <h3>TEA Inputs</h3>
+      <div class="grid">
+        <div class="field">
+          <label>Life (years)</label>
+          <input id="life" value="15">
+        </div>
+        <div class="field">
+          <label>Discount (%)</label>
+          <input id="discount" value="8">
+        </div>
+        <div class="field">
+          <label>CAPEX</label>
+          <input id="capex" value="5000000">
+        </div>
+        <div class="field">
+          <label>Revenue (annual)</label>
+          <input id="revenue" value="2000000">
+        </div>
+        <div class="field">
+          <label>OPEX (annual)</label>
+          <input id="opex" value="1200000">
+        </div>
+      </div>
+      <div class="actions">
+        <button onclick="runTEA()">Run TEA</button>
+      </div>
+      <div id="teaKPI" class="kpi"></div>
+    </div>
+
+    <div class="card">
+      <h3>Cashflow</h3>
+      <canvas id="teaChart"></canvas>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div id="summary" class="page">
+    <div class="card">
+      <h3>Integrated Results</h3>
+      <div id="summaryResults" class="kpi"></div>
+      <div id="summaryExtras" class="small"></div>
+    </div>
+
+    <div class="card">
+      <h3>Quick notes</h3>
+      <div class="small">
+        This is a screening tool. Biggest uncertainties typically come from waste EFs and export credits.
+        Keep factors documented and do sensitivity checks.
+      </div>
+    </div>
+  </div>
+
 </div>
 
-<!-- TEA -->
-<div id="tea" class="page">
-<div class="card">
-<h3>TEA Inputs</h3>
-Life (years)<input id="life" value="15">
-Discount %<input id="discount" value="8">
-CAPEX<input id="capex" value="5000000">
-Revenue<input id="revenue" value="2000000">
-OPEX<input id="opex" value="1200000">
-<button onclick="runTEA()">Run TEA</button>
-<div id="teaKPI" class="kpi"></div>
-</div>
-<canvas id="teaChart"></canvas>
-</div>
-
-<!-- SUMMARY -->
-<div id="summary" class="page">
-<div class="card">
-<h3>Integrated Results</h3>
-<div id="summaryResults" class="kpi"></div>
-</div>
-</div>
+<div id="toast" class="toast"></div>
 
 <script>
-
 let appState = {}
 let lcaChart = null
 let teaChart = null
+let flowChart = null
+
+function num(id){
+  const v = parseFloat(document.getElementById(id).value)
+  return Number.isFinite(v) ? v : 0
+}
+
+function setActiveTab(id){
+  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"))
+  const tab = document.getElementById("tab-"+id)
+  if(tab) tab.classList.add("active")
+}
 
 function showPage(id){
- document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
- document.getElementById(id).classList.add('active')
- updateSummary()
+  setActiveTab(id)
+
+  document.querySelectorAll('.page').forEach(p=>{
+    p.classList.remove('active','visible')
+  })
+  const page = document.getElementById(id)
+  page.classList.add('active')
+  requestAnimationFrame(()=>page.classList.add('visible'))
+
+  updateSummary()
+}
+
+function toast(msg){
+  const t = document.getElementById("toast")
+  t.textContent = msg
+  t.classList.add("show")
+  clearTimeout(toast._timer)
+  toast._timer = setTimeout(()=>t.classList.remove("show"), 1800)
+}
+
+/* Animated count-up for KPI numbers inside a string like: "Net GHG: 123.4 kg CO₂e/FU" */
+function animateKPI(el, newText, durationMs=650){
+  const prev = el.textContent || ""
+  const mNew = newText.match(/(-?\d+(\.\d+)?)/)
+  const mOld = prev.match(/(-?\d+(\.\d+)?)/)
+  if(!mNew){
+    el.textContent = newText
+    return
+  }
+  const target = parseFloat(mNew[1])
+  const start = mOld ? parseFloat(mOld[1]) : 0
+
+  const prefix = newText.slice(0, mNew.index)
+  const suffix = newText.slice(mNew.index + mNew[1].length)
+
+  const t0 = performance.now()
+  function step(t){
+    const u = Math.min(1, (t - t0)/durationMs)
+    const eased = 1 - Math.pow(1-u, 3)
+    const val = start + (target - start)*eased
+    const txt = prefix + (suffix.includes("kg") ? val.toFixed(1) : Math.round(val)) + suffix
+    el.textContent = txt
+    if(u < 1) requestAnimationFrame(step)
+  }
+  requestAnimationFrame(step)
 }
 
 // ---------------- LCA ----------------
 function runLCA(){
+  // Mass flows (t/FU)
+  const feedIn    = num("feedIn")
+  const prodOut   = num("prodOut")
+  const coprodOut = num("coprodOut")
+  const wSolid    = num("wSolid")
+  const wLiquid   = num("wLiquid")
+  const wGas      = num("wGas")
 
- let biomass = parseFloat(document.getElementById("biomass").value)
- let km = parseFloat(document.getElementById("km").value)
- let truckEF = parseFloat(document.getElementById("truckEF").value)
- let elec = parseFloat(document.getElementById("elec").value)
- let gridEF = parseFloat(document.getElementById("gridEF").value)
+  // Mass-balance gap closers (t/FU)
+  const waterIn       = num("waterIn")
+  const airIn         = num("airIn")
+  const waterVaporOut = num("waterVaporOut")
+  const co2Out        = num("co2Out")
 
- let transport = biomass * km * truckEF
- let electricity = elec * gridEF
- let total = transport + electricity
+  // Logistics + energy
+  const km      = num("km")
+  const truckEF = num("truckEF")
 
- appState.ghg = total
+  const elecIn  = num("elecIn")
+  const gridEF  = num("gridEF")
 
- document.getElementById("lcaKPI").innerHTML =
- "GHG: " + total.toFixed(1) + " kg CO₂e/FU"
+  const heatIn  = num("heatIn")
+  const heatEF  = num("heatEF")
 
- if(lcaChart) lcaChart.destroy()
+  const elecOut = num("elecOut")
+  const heatOut = num("heatOut")
 
- lcaChart = new Chart(
-   document.getElementById("lcaChart").getContext("2d"),
-   {
-     type:'doughnut',
-     data:{
-       labels:['Transport','Electricity'],
-       datasets:[{
-         data:[transport, electricity],
-         backgroundColor:['#ff6b6b','#4ecdc4']
-       }]
-     }
-   }
- )
+  // Waste treatment EFs (kg CO2e/t waste)
+  const efSolid  = num("efSolid")
+  const efLiquid = num("efLiquid")
+  const efGas    = num("efGas")
+
+  // --- Screening GHG ---
+  const transport_kg = feedIn * km * truckEF
+  const elecIn_kg    = elecIn * gridEF
+  const heatIn_kg    = heatIn * heatEF
+
+  const wasteSolid_kg  = wSolid  * efSolid
+  const wasteLiquid_kg = wLiquid * efLiquid
+  const wasteGas_kg    = wGas    * efGas
+
+  const credits_kg = (elecOut * gridEF) + (heatOut * heatEF)
+
+  const gross_kg = transport_kg + elecIn_kg + heatIn_kg + wasteSolid_kg + wasteLiquid_kg + wasteGas_kg
+  const net_kg = gross_kg - credits_kg
+
+  appState.lca = {
+    net_kg, gross_kg,
+    breakdown: {
+      Transport: transport_kg,
+      Electricity_in: elecIn_kg,
+      Heat_in: heatIn_kg,
+      Solid_waste: wasteSolid_kg,
+      Liquid_waste: wasteLiquid_kg,
+      Gas_waste: wasteGas_kg,
+      Energy_credits: -credits_kg
+    },
+    flows: {
+      feedIn, prodOut, coprodOut, wSolid, wLiquid, wGas,
+      waterIn, airIn, waterVaporOut, co2Out,
+      elecIn, heatIn, elecOut, heatOut
+    }
+  }
+
+  // Mass check (screening)
+  const massIn  = feedIn + waterIn + airIn
+  const massOut = prodOut + coprodOut + wSolid + wLiquid + wGas + waterVaporOut + co2Out
+  const massDelta = massIn - massOut
+  const pct = massIn !== 0 ? (massDelta / massIn) * 100 : 0
+
+  const kpiEl = document.getElementById("lcaKPI")
+  animateKPI(kpiEl, "Net GHG: " + net_kg.toFixed(1) + " kg CO₂e/FU")
+
+  document.getElementById("lcaMassCheck").textContent =
+    "Mass check (screening): in " + massIn.toFixed(3) + " t/FU vs out " + massOut.toFixed(3) +
+    " t/FU (Δ = " + massDelta.toFixed(3) + " t, " + pct.toFixed(1) + "%)."
+
+  drawLCAChart(appState.lca.breakdown)
+  drawFlowChart(appState.lca.flows)
+
+  toast("LCA updated")
+  updateSummary()
+}
+
+function drawLCAChart(breakdown){
+  if(lcaChart) lcaChart.destroy()
+
+  const labels = ["Transport","Electricity in","Heat in","Solid waste","Liquid waste","Gas waste","Energy credits"]
+  const data = [
+    breakdown.Transport,
+    breakdown.Electricity_in,
+    breakdown.Heat_in,
+    breakdown.Solid_waste,
+    breakdown.Liquid_waste,
+    breakdown.Gas_waste,
+    -breakdown.Energy_credits // stored as negative already, we want positive magnitude shown in chart
+  ]
+
+  const ctx = document.getElementById("lcaChart").getContext("2d")
+  lcaChart = new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels,
+      datasets:[{
+        data,
+        backgroundColor:['#ff6b6b','#4ecdc4','#ffd93d','#a29bfe','#74b9ff','#fab1a0','#2d3436'],
+        borderWidth:0
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{ position:'bottom' },
+        tooltip:{
+          callbacks:{
+            label:(c)=> `${c.label}: ${c.parsed.toFixed(2)} kg CO₂e`
+          }
+        }
+      },
+      onClick:(evt, elements)=>{
+        const out = document.getElementById("lcaSliceInfo")
+        if(!elements || !elements.length){ out.textContent=""; return; }
+        const i = elements[0].index
+        const lab = labels[i]
+        const val = data[i]
+        out.textContent = lab + " = " + val.toFixed(2) + " kg CO₂e"
+      }
+    }
+  })
+}
+
+function drawFlowChart(flows){
+  if(flowChart) flowChart.destroy()
+
+  const flowLabels = [
+    "Feed in (t)","Water in (t)","Air in (t)",
+    "Product out (t)","Co-product (t)",
+    "Solid waste (t)","Liquid waste (t)","Gas waste (t)",
+    "Evap water (t)","CO₂ out (t)",
+    "Elec in (kWh)","Heat in (MJ)","Elec out (kWh)","Heat out (MJ)"
+  ]
+  const flowData = [
+    flows.feedIn, flows.waterIn, flows.airIn,
+    flows.prodOut, flows.coprodOut,
+    flows.wSolid, flows.wLiquid, flows.wGas,
+    flows.waterVaporOut, flows.co2Out,
+    flows.elecIn, flows.heatIn, flows.elecOut, flows.heatOut
+  ]
+
+  const ctx = document.getElementById("flowChart").getContext("2d")
+  flowChart = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels: flowLabels,
+      datasets:[{
+        label:'Flow magnitude (mixed units)',
+        data: flowData
+      }]
+    },
+    options:{
+      plugins:{ legend:{ display:false } },
+      scales:{ y:{ beginAtZero:true } },
+      onClick:(evt, elements)=>{
+        if(!elements || !elements.length) return
+        const i = elements[0].index
+        toast(flowLabels[i] + ": " + flowData[i])
+      }
+    }
+  })
+}
+
+function quickScenario(which){
+  // Just modifies a few levers so users can explore sensitivity fast
+  if(which === 'low'){
+    document.getElementById("gridEF").value = "0.15"
+    document.getElementById("km").value = "50"
+    document.getElementById("efGas").value = "100"
+    toast("Loaded low-impact assumptions")
+  }else{
+    document.getElementById("gridEF").value = "0.55"
+    document.getElementById("km").value = "250"
+    document.getElementById("efGas").value = "400"
+    toast("Loaded high-impact assumptions")
+  }
+  runLCA()
 }
 
 // ---------------- TEA ----------------
 function runTEA(){
+  const life = Math.max(0, parseInt(document.getElementById("life").value || "0",10))
+  const r = num("discount")/100
+  const capex = num("capex")
+  const revenue = num("revenue")
+  const opex = num("opex")
 
- let life = parseInt(document.getElementById("life").value)
- let r = parseFloat(document.getElementById("discount").value)/100
- let capex = parseFloat(document.getElementById("capex").value)
- let revenue = parseFloat(document.getElementById("revenue").value)
- let opex = parseFloat(document.getElementById("opex").value)
+  const margin = revenue - opex
+  let npv = -capex
+  const cash = [-capex]
 
- let margin = revenue - opex
- let npv = -capex
+  for(let y=1;y<=life;y++){
+    npv += margin / Math.pow(1+r,y)
+    cash.push(margin)
+  }
 
- let cash = [-capex]
+  appState.npv = npv
 
- for(let y=1;y<=life;y++){
-   npv += margin / Math.pow(1+r,y)
-   cash.push(margin)
- }
+  const kpiEl = document.getElementById("teaKPI")
+  animateKPI(kpiEl, "NPV: $" + npv.toFixed(0))
 
- appState.npv = npv
+  if(teaChart) teaChart.destroy()
 
- document.getElementById("teaKPI").innerHTML =
- "NPV: $" + npv.toFixed(0)
+  teaChart = new Chart(
+    document.getElementById("teaChart").getContext("2d"),
+    {
+      type:'line',
+      data:{
+        labels: cash.map((_,i)=>i),
+        datasets:[{
+          label:'Annual Cashflow',
+          data: cash,
+          borderColor:'#ffd93d',
+          backgroundColor:'rgba(255,217,61,0.2)',
+          tension:0.3
+        }]
+      },
+      options:{
+        plugins:{ legend:{ position:'bottom' } },
+        onClick:(evt, elements)=>{
+          if(!elements || !elements.length) return
+          const i = elements[0].index
+          toast("Year " + i + " cashflow: " + cash[i])
+        }
+      }
+    }
+  )
 
- if(teaChart) teaChart.destroy()
-
- teaChart = new Chart(
-   document.getElementById("teaChart").getContext("2d"),
-   {
-     type:'line',
-     data:{
-       labels: cash.map((_,i)=>i),
-       datasets:[{
-         label:'Annual Cashflow',
-         data: cash,
-         borderColor:'#ffd93d',
-         backgroundColor:'rgba(255,217,61,0.2)',
-         tension:0.3
-       }]
-     }
-   }
- )
+  toast("TEA updated")
+  updateSummary()
 }
 
 // ---------------- SUMMARY ----------------
 function updateSummary(){
- if(appState.ghg && appState.npv){
-   document.getElementById("summaryResults").innerHTML =
-   "GHG: " + appState.ghg.toFixed(1) +
-   " kg CO₂e/FU | NPV: $" + appState.npv.toFixed(0)
- } else {
-   document.getElementById("summaryResults").innerHTML =
-   "Run LCA and TEA first."
- }
+  const hasLCA = !!appState.lca
+  const hasTEA = Number.isFinite(appState.npv)
+
+  const r = document.getElementById("summaryResults")
+  const e = document.getElementById("summaryExtras")
+
+  if(hasLCA && hasTEA){
+    r.innerHTML =
+      "Net GHG: " + appState.lca.net_kg.toFixed(1) + " kg CO₂e/FU " +
+      "<span class='pill'>Gross: " + appState.lca.gross_kg.toFixed(1) + "</span>" +
+      "<span class='pill'>NPV: $" + appState.npv.toFixed(0) + "</span>"
+
+    const f = appState.lca.flows
+    e.textContent =
+      "Inventory — In: feed " + f.feedIn + " t, water " + f.waterIn + " t, air " + f.airIn + " t. " +
+      "Out: product " + f.prodOut + " t, co-prod " + f.coprodOut + " t, wastes (S/L/G) " +
+      f.wSolid + "/" + f.wLiquid + "/" + f.wGas + " t, evap " + f.waterVaporOut + " t, CO₂ " + f.co2Out + " t. " +
+      "Energy in (elec/heat): " + f.elecIn + " kWh, " + f.heatIn + " MJ. " +
+      "Energy out (elec/heat): " + f.elecOut + " kWh, " + f.heatOut + " MJ."
+  } else {
+    r.textContent = "Run LCA and TEA first."
+    e.textContent = ""
+  }
 }
 
+// Keyboard shortcut: Ctrl/⌘ + Enter runs the relevant model for the active tab
+document.addEventListener("keydown", (ev)=>{
+  if((ev.ctrlKey || ev.metaKey) && ev.key === "Enter"){
+    if(document.getElementById("lca").classList.contains("active")) runLCA()
+    else if(document.getElementById("tea").classList.contains("active")) runTEA()
+    else toast("Go to LCA or TEA to run models")
+  }
+})
+
+// Initialize tab state + initial transition
+setActiveTab("lca")
+requestAnimationFrame(()=>document.getElementById("lca").classList.add("visible"))
 </script>
 </body>
 </html>
