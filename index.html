@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>OVO — LCA + TEA Interactive Dashboard</title>
+  <title>LCA + TEA Interactive Dashboard</title>
 
   <!-- Hardening (inline CSS/JS => 'unsafe-inline' unless you externalize files) -->
   <meta http-equiv="Content-Security-Policy"
@@ -65,13 +65,6 @@
       margin:0;
       font-size:24px;
       font-weight:900;
-    }
-    header .sub{
-      margin-top:6px;
-      font-size:12px;
-      font-weight:800;
-      color: rgba(255,255,255,0.85);
-      letter-spacing:0.2px;
     }
 
     nav{
@@ -217,9 +210,7 @@
       outline:none;
       font-weight:800;
     }
-    select{
-      appearance:none;
-    }
+    select{ appearance:none; }
     input:focus-visible, select:focus-visible{
       border-color: rgba(255,255,255,0.55);
       box-shadow: 0 0 0 3px rgba(255,255,255,0.16);
@@ -325,14 +316,8 @@
       border-bottom:1px solid rgba(255,255,255,0.10);
       text-align:left;
     }
-    .table th{
-      color: rgba(255,255,255,0.95);
-      font-weight:900;
-    }
-    .table td{
-      color: rgba(255,255,255,0.85);
-      font-weight:800;
-    }
+    .table th{ color: rgba(255,255,255,0.95); font-weight:900; }
+    .table td{ color: rgba(255,255,255,0.85); font-weight:800; }
 
     @media (prefers-reduced-motion: reduce){
       *{ transition:none !important; animation:none !important; scroll-behavior:auto !important; }
@@ -342,13 +327,13 @@
 
 <body>
   <header>
-    <h1>OVO — Integrated LCA + TEA Dashboard</h1>
-    <div class="sub">Screening model + one-way sensitivity (tornado)</div>
+    <h1>🌍 Integrated LCA + TEA Dashboard</h1>
   </header>
 
   <nav role="tablist" aria-label="Dashboard sections">
     <button id="tab-lca" role="tab" aria-controls="lca" aria-selected="true" onclick="showPage('lca')">LCA</button>
     <button id="tab-tea" role="tab" aria-controls="tea" aria-selected="false" onclick="showPage('tea')">TEA</button>
+    <button id="tab-sensitivity" role="tab" aria-controls="sensitivity" aria-selected="false" onclick="showPage('sensitivity')">Sensitivity</button>
     <button id="tab-summary" role="tab" aria-controls="summary" aria-selected="false" onclick="showPage('summary')">Summary</button>
   </nav>
 
@@ -456,7 +441,7 @@
               <input id="otherIn" type="number" min="0" step="0.001" inputmode="decimal" value="0">
               <div class="unit">t/FU</div>
             </div>
-            <div class="small">Chemicals, catalysts, solvents (mass basis), etc. screening term.</div>
+            <div class="small">Chemicals, catalysts, solvents etc. screening term.</div>
           </div>
 
           <div class="field" data-field>
@@ -683,7 +668,6 @@
               <input id="salvage" type="number" min="0" step="1000" inputmode="numeric" value="0">
               <div class="unit">$</div>
             </div>
-            <div class="small">Optional terminal value at end of life (screening).</div>
           </div>
 
           <div class="field" data-field>
@@ -692,7 +676,6 @@
               <input id="wc" type="number" min="0" step="1000" inputmode="numeric" value="0">
               <div class="unit">$</div>
             </div>
-            <div class="small">Tied up at year 0 and released at end of life (screening).</div>
           </div>
         </div>
 
@@ -713,14 +696,8 @@
       </div>
     </section>
 
-    <!-- SUMMARY -->
-    <section id="summary" class="page" role="tabpanel" aria-labelledby="tab-summary">
-      <div class="card">
-        <h2>Integrated Results</h2>
-        <div id="summaryResults" class="kpi" aria-live="polite"></div>
-        <div id="summaryExtras" class="small"></div>
-      </div>
-
+    <!-- SENSITIVITY (standalone tab) -->
+    <section id="sensitivity" class="page" role="tabpanel" aria-labelledby="tab-sensitivity">
       <div class="card">
         <h2>Sensitivity analysis (one-way tornado)</h2>
         <div class="small">
@@ -767,6 +744,23 @@
           <summary>Parameters included</summary>
           <div class="small" id="sensParamList"></div>
         </details>
+      </div>
+
+      <div class="card">
+        <h2>Notes</h2>
+        <div class="small">
+          One-way sensitivity does not capture parameter correlations or nonlinear interaction effects.
+          For uncertainty, assign distributions and run Monte Carlo.
+        </div>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section id="summary" class="page" role="tabpanel" aria-labelledby="tab-summary">
+      <div class="card">
+        <h2>Integrated Results</h2>
+        <div id="summaryResults" class="kpi" aria-live="polite"></div>
+        <div id="summaryExtras" class="small"></div>
       </div>
 
       <div class="card">
@@ -825,7 +819,7 @@
     };
 
     const INPUT_IDS = Object.keys(DEFAULTS);
-    const STORAGE_KEY = "ovo_lca_tea_dashboard_v3";
+    const STORAGE_KEY = "lca_tea_dashboard_v4";
 
     let appState = {
       lca: null,
@@ -850,8 +844,7 @@
 
     function readNum(id){
       const el = $(id);
-      const v = el.value;
-      const x = Number(v);
+      const x = Number(el.value);
       return Number.isFinite(x) ? x : NaN;
     }
 
@@ -869,14 +862,10 @@
 
     function showPage(id){
       setActiveTab(id);
-
-      document.querySelectorAll('.page').forEach(p=>{
-        p.classList.remove('active','visible');
-      });
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active','visible'));
       const page = $(id);
       page.classList.add('active');
       requestAnimationFrame(()=>page.classList.add('visible'));
-
       updateSummary();
     }
 
@@ -892,13 +881,10 @@
       const prev = el.textContent || "";
       const mNew = newText.match(/(-?\d+(\.\d+)?)/);
       const mOld = prev.match(/(-?\d+(\.\d+)?)/);
-      if(!mNew){
-        el.textContent = newText;
-        return;
-      }
+      if(!mNew){ el.textContent = newText; return; }
+
       const target = parseFloat(mNew[1]);
       const start = mOld ? parseFloat(mOld[1]) : 0;
-
       const prefix = newText.slice(0, mNew.index);
       const suffix = newText.slice(mNew.index + mNew[1].length);
 
@@ -978,45 +964,27 @@
         "km","truckEF","elecIn","gridEF","heatIn","heatEF","elecOut","heatOut",
         "efSolid","efLiquid","efGas"
       ];
-
       for(const id of nonneg){
         const x = readNum(id);
-        if(!Number.isFinite(x)){
-          errs.push(`${id}: not a number`);
-          invalidate(id);
-        } else if(x < 0){
-          errs.push(`${id}: must be ≥ 0`);
-          invalidate(id);
-        }
+        if(!Number.isFinite(x)){ errs.push(`${id}: not a number`); invalidate(id); }
+        else if(x < 0){ errs.push(`${id}: must be ≥ 0`); invalidate(id); }
       }
       return errs;
     }
 
     function validateTEA(){
       const errs = [];
-      const life = readNum("life");
-      const discount = readNum("discount");
-      const capex = readNum("capex");
-      const revenue = readNum("revenue");
-      const opex = readNum("opex");
-      const salvage = readNum("salvage");
-      const wc = readNum("wc");
-
       const checks = [
-        ["life", life, (x)=>Number.isFinite(x) && x >= 1],
-        ["discount", discount, (x)=>Number.isFinite(x) && x >= 0],
-        ["capex", capex, (x)=>Number.isFinite(x) && x >= 0],
-        ["revenue", revenue, (x)=>Number.isFinite(x) && x >= 0],
-        ["opex", opex, (x)=>Number.isFinite(x) && x >= 0],
-        ["salvage", salvage, (x)=>Number.isFinite(x) && x >= 0],
-        ["wc", wc, (x)=>Number.isFinite(x) && x >= 0],
+        ["life", readNum("life"), (x)=>Number.isFinite(x) && x >= 1],
+        ["discount", readNum("discount"), (x)=>Number.isFinite(x) && x >= 0],
+        ["capex", readNum("capex"), (x)=>Number.isFinite(x) && x >= 0],
+        ["revenue", readNum("revenue"), (x)=>Number.isFinite(x) && x >= 0],
+        ["opex", readNum("opex"), (x)=>Number.isFinite(x) && x >= 0],
+        ["salvage", readNum("salvage"), (x)=>Number.isFinite(x) && x >= 0],
+        ["wc", readNum("wc"), (x)=>Number.isFinite(x) && x >= 0],
       ];
-
       for(const [id, val, ok] of checks){
-        if(!ok(val)){
-          errs.push(`${id}: invalid (must be numeric and within bounds)`);
-          invalidate(id);
-        }
+        if(!ok(val)){ errs.push(`${id}: invalid`); invalidate(id); }
       }
       return errs;
     }
@@ -1031,27 +999,22 @@
     function updateAllStatus(){
       const statusEl = $("lcaStatus");
       const pills = [];
-
       pills.push(appState.dirtyLCA
         ? `<span class="pill warn">Results out of date</span>`
         : `<span class="pill ok">Up to date</span>`);
-
       if(appState.lca && appState.lca.massCheck){
         const m = appState.lca.massCheck;
         const cls = m.absPct <= 2 ? "ok" : (m.absPct <= 5 ? "warn" : "bad");
         pills.push(`<span class="pill ${cls}">Mass Δ: ${fmt1.format(m.pct)}%</span>`);
       }
-
       statusEl.innerHTML = pills.join(" ");
     }
 
     function attachInputHandlers(){
       const debouncedSave = debounce(saveNow, 250);
-
       for(const id of INPUT_IDS){
         const el = $(id);
         if(!el) continue;
-
         el.addEventListener("input", ()=>{
           if(["life","discount","capex","revenue","opex","salvage","wc"].includes(id)) markDirty("tea");
           else markDirty("lca");
@@ -1144,7 +1107,7 @@
       const discT = (r === 0) ? 1 : Math.pow(1+r, life);
       npv += (salvage + wc) / discT;
 
-      return { npv, margin };
+      return { npv };
     }
 
     function getAllInputs(){
@@ -1166,7 +1129,6 @@
       }
 
       const I = getAllInputs();
-
       const { net_kg, gross_kg } = computeLCAFromInputs(I);
 
       const massIn  = I.feedIn + I.waterIn + I.airIn + I.otherIn;
@@ -1191,10 +1153,7 @@
           waterVaporOut: I.waterVaporOut, co2Out: I.co2Out, otherOut: I.otherOut,
           elecIn: I.elecIn, heatIn: I.heatIn, elecOut: I.elecOut, heatOut: I.heatOut
         },
-        massCheck: {
-          massIn, massOut, massDelta, pct,
-          absPct: Math.abs(pct)
-        },
+        massCheck: { massIn, massOut, massDelta, pct, absPct: Math.abs(pct) },
         meta: { mjPerKwh: 3.6 }
       };
 
@@ -1220,8 +1179,7 @@
       const labels = rows.map(r=>r.label);
       const data = rows.map(r=>r.value);
 
-      const ctx = $("lcaChart").getContext("2d");
-      lcaChart = new Chart(ctx,{
+      lcaChart = new Chart($("lcaChart").getContext("2d"),{
         type:'bar',
         data:{ labels, datasets:[{ label:'kg CO₂e/FU', data }] },
         options:{
@@ -1231,9 +1189,7 @@
             legend:{ position:'bottom' },
             tooltip:{ callbacks:{ label:(c)=> `${c.label}: ${fmt2.format(c.parsed.y)} kg CO₂e` } }
           },
-          scales:{
-            y:{ beginAtZero:false, title:{ display:true, text:'kg CO₂e/FU' } }
-          }
+          scales:{ y:{ beginAtZero:false, title:{ display:true, text:'kg CO₂e/FU' } } }
         }
       });
     }
@@ -1244,8 +1200,7 @@
       const massIn  = [f.feedIn,f.waterIn,f.airIn,f.otherIn,0,0,0,0,0,0,0,0];
       const massOut = [0,0,0,0,f.prodOut,f.coprodOut,f.wSolid,f.wLiquid,f.wGas,f.waterVaporOut,f.co2Out,f.otherOut];
 
-      const ctx = $("massChart").getContext("2d");
-      massChart = new Chart(ctx,{
+      massChart = new Chart($("massChart").getContext("2d"),{
         type:'bar',
         data:{
           labels,
@@ -1271,8 +1226,7 @@
       const inData = [f.elecIn, f.heatIn / MJ_PER_KWH];
       const outData = [f.elecOut, f.heatOut / MJ_PER_KWH];
 
-      const ctx = $("energyChart").getContext("2d");
-      energyChart = new Chart(ctx,{
+      energyChart = new Chart($("energyChart").getContext("2d"),{
         type:'bar',
         data:{
           labels,
@@ -1325,13 +1279,10 @@
       animateKPI($("teaKPI"), "NPV: $" + npv.toFixed(0));
 
       const life = Math.max(1, Math.round(I.life));
-      const r = Math.max(0, I.discount)/100;
       const capex = I.capex;
-      const revenue = I.revenue;
-      const opex = I.opex;
-      const salvage = I.salvage || 0;
       const wc = I.wc || 0;
-      const margin = revenue - opex;
+      const salvage = I.salvage || 0;
+      const margin = (I.revenue - I.opex);
 
       const cash = [-(capex + wc)];
       for(let y=1;y<=life;y++) cash.push(margin);
@@ -1340,10 +1291,7 @@
       if(teaChart) teaChart.destroy();
       teaChart = new Chart($("teaChart").getContext("2d"),{
         type:'line',
-        data:{
-          labels: cash.map((_,i)=>i),
-          datasets:[{ label:'Annual cashflow ($)', data: cash, tension:0.25 }]
-        },
+        data:{ labels: cash.map((_,i)=>i), datasets:[{ label:'Annual cashflow ($)', data: cash, tension:0.25 }] },
         options:{
           responsive:true,
           maintainAspectRatio:false,
@@ -1392,7 +1340,6 @@
     // ---------------- Export ----------------
     function copyResults(){
       const payload = {
-        owner: "OVO",
         timestamp: new Date().toISOString(),
         inputs: getAllInputs(),
         results: {
@@ -1402,26 +1349,24 @@
             breakdown: appState.lca.breakdown,
             massCheck: appState.lca.massCheck
           } : null,
-          tea: appState.tea ? { npv: appState.tea.npv } : null,
-          sensitivity: appState.sensitivity
+          tea: appState.tea ? { npv: appState.tea.npv } : null
         }
       };
 
       const txt = JSON.stringify(payload, null, 2);
-      navigator.clipboard.writeText(txt).then(()=>{
-        toast("Copied results to clipboard");
-      }).catch(()=>{
-        const ta = document.createElement("textarea");
-        ta.value = txt;
-        document.body.appendChild(ta);
-        ta.select();
-        try{ document.execCommand("copy"); toast("Copied results to clipboard"); }
-        catch(_){ toast("Copy failed (browser restriction)"); }
-        ta.remove();
-      });
+      navigator.clipboard.writeText(txt).then(()=>toast("Copied results to clipboard"))
+        .catch(()=>{
+          const ta = document.createElement("textarea");
+          ta.value = txt;
+          document.body.appendChild(ta);
+          ta.select();
+          try{ document.execCommand("copy"); toast("Copied results to clipboard"); }
+          catch(_){ toast("Copy failed (browser restriction)"); }
+          ta.remove();
+        });
     }
 
-    // ---------------- Sensitivity parameter definitions ----------------
+    // ---------------- Sensitivity definitions + runner ----------------
     const SENS_PARAMS = [
       // LCA drivers
       { key:"gridEF",  label:"Grid EF (kg/kWh)", metric:"lca_net" },
@@ -1472,10 +1417,7 @@
       }
 
       const base = getAllInputs();
-
-      const baseMetric =
-        metric === "lca_net" ? computeLCAFromInputs(base).net_kg :
-        computeTEAFromInputs(base).npv;
+      const baseMetric = metric === "lca_net" ? computeLCAFromInputs(base).net_kg : computeTEAFromInputs(base).npv;
 
       const params = SENS_PARAMS.filter(p=>p.metric === metric);
       $("sensParamList").innerHTML = params.map(p=>`• ${p.label} (${p.key})`).join("<br>");
@@ -1487,7 +1429,7 @@
 
         let lo, hi;
         if(x0 === 0){
-          const d = (DEFAULTS && Number.isFinite(DEFAULTS[p.key])) ? DEFAULTS[p.key] : 1;
+          const d = Number.isFinite(DEFAULTS[p.key]) ? DEFAULTS[p.key] : 1;
           const delta = Math.abs(d) * (pct || 0.2);
           lo = x0 - delta;
           hi = x0 + delta;
@@ -1502,17 +1444,11 @@
         const loInputs = { ...base, [p.key]: lo };
         const hiInputs = { ...base, [p.key]: hi };
 
-        const loMetric =
-          metric === "lca_net" ? computeLCAFromInputs(loInputs).net_kg :
-          computeTEAFromInputs(loInputs).npv;
-
-        const hiMetric =
-          metric === "lca_net" ? computeLCAFromInputs(hiInputs).net_kg :
-          computeTEAFromInputs(hiInputs).npv;
+        const loMetric = metric === "lca_net" ? computeLCAFromInputs(loInputs).net_kg : computeTEAFromInputs(loInputs).npv;
+        const hiMetric = metric === "lca_net" ? computeLCAFromInputs(hiInputs).net_kg : computeTEAFromInputs(hiInputs).npv;
 
         const dLo = loMetric - baseMetric;
         const dHi = hiMetric - baseMetric;
-
         const impact = Math.max(Math.abs(dLo), Math.abs(dHi));
 
         rows.push({ key:p.key, label:p.label, lo, hi, dLo, dHi, impact });
@@ -1528,13 +1464,7 @@
 
       drawSensitivityChart(trimmed, metric, unit);
 
-      appState.sensitivity = {
-        metric,
-        variation_pct: Math.round(pct*100),
-        baseMetric,
-        rows: trimmed
-      };
-
+      appState.sensitivity = { metric, variation_pct: Math.round(pct*100), baseMetric, rows: trimmed };
       toast("Sensitivity updated");
     }
 
@@ -1545,8 +1475,7 @@
       const low = rows.map(r=>r.dLo);
       const high = rows.map(r=>r.dHi);
 
-      const ctx = $("sensChart").getContext("2d");
-      sensChart = new Chart(ctx, {
+      sensChart = new Chart($("sensChart").getContext("2d"), {
         type: "bar",
         data: {
           labels,
@@ -1572,28 +1501,15 @@
             }
           },
           scales: {
-            x: {
-              title: { display: true, text: `Δ ${unit} (vs baseline)` }
-            }
-          },
-          onClick: (evt, elements) => {
-            if(!elements || !elements.length) return;
-            const e = elements[0];
-            const row = rows[e.index];
-            const lowTxt = (metric==="lca_net") ? fmt2.format(row.dLo) : fmt0.format(row.dLo);
-            const hiTxt  = (metric==="lca_net") ? fmt2.format(row.dHi) : fmt0.format(row.dHi);
-            toast(`${row.label}: low Δ ${lowTxt}, high Δ ${hiTxt}`);
+            x: { title: { display: true, text: `Δ ${unit} (vs baseline)` } }
           }
         }
       });
     }
 
     function copySensitivity(){
-      if(!appState.sensitivity){
-        toast("Run sensitivity first");
-        return;
-      }
-      const txt = JSON.stringify({ owner:"OVO", timestamp:new Date().toISOString(), sensitivity: appState.sensitivity }, null, 2);
+      if(!appState.sensitivity){ toast("Run sensitivity first"); return; }
+      const txt = JSON.stringify({ timestamp:new Date().toISOString(), sensitivity: appState.sensitivity }, null, 2);
       navigator.clipboard.writeText(txt).then(()=>toast("Copied sensitivity to clipboard"))
         .catch(()=>toast("Copy failed (browser restriction)"));
     }
@@ -1603,7 +1519,8 @@
       if((ev.ctrlKey || ev.metaKey) && ev.key === "Enter"){
         if($("lca").classList.contains("active")) runLCA();
         else if($("tea").classList.contains("active")) runTEA();
-        else toast("Go to LCA or TEA to run models");
+        else if($("sensitivity").classList.contains("active")) runSensitivity();
+        else toast("Go to a tab to run models");
       }
     });
 
